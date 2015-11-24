@@ -1,0 +1,29 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+char buffer[500];
+void cat(char *file)
+{
+  char buf[200];
+  FILE *fp=fopen(file,"r");
+  if(fp==NULL)
+  printf("file not present");
+  else
+ {
+  while ((fgets(buf,200,(FILE*) fp)))
+   strcat(buffer,buf);
+
+ }printf("%s",buffer);}
+
+int main(int argc, char *argv[])
+{
+  int i;
+if(argc<2)
+printf("please give filename");
+  else
+{
+
+ for(i=1;i<argc;i++)
+{cat(argv[i]);}
+}}
+

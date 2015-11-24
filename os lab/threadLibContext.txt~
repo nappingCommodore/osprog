@@ -1,0 +1,52 @@
+//Thread library implementation using Context switching
+
+
+#include <stdio.h>
+#include <malloc.h>
+#include <stdlib.h>
+#include <ucontext.h>
+
+#define FIBER_STACK 1024*64
+
+ucontext_t child,parent;
+
+void threadFunction(){
+        printf("Child fiber switching context to parent\n\n");
+
+        swapcontext(&child,&parent);
+
+        printf("Child thread is exiting now\n\n");
+
+        swapcontext(&child,&parent);
+
+}
+
+
+int main(){
+	getcontext(&parent);
+        getcontext(&child);
+
+        child.uc_link = 0;
+        child.uc_stack.ss_sp = malloc(FIBER_STACK);
+        child.uc_stack.ss_size = FIBER_STACK;
+        child.uc_stack.ss_flags = 0;
+
+        if(child.uc_stack.ss_sp == 0){
+                perror("stack space allocation failed\n");
+                exit(1);
+        }
+
+        printf("Creating child fiber \n\n\n");
+        makecontext(&child,&threadFunction,0);
+
+        printf("Switching from parent to child fiber\n\n");
+        swapcontext(&parent,&child);
+
+        printf("Switching to child fiber AGAIN\n\n");
+        swapcontext(&parent,&child);
+
+        free(child.uc_stack.ss_sp);
+        printf("Child fiber returned and stack freed\n\n");
+
+        return 0;
+}

@@ -1,0 +1,144 @@
+//Producer consumer using system v
+
+
+#include<pthread.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<sys/sem.h>
+#include<stdint.h>
+
+#define BUFF_SIZE       5
+#define NP              3
+#define NC              3
+#define NITERS          4
+
+//Common buffer in which producer produces
+//and consumer consumes
+
+typedef struct{
+        int buf[BUFF_SIZE];
+        int in;
+        int out;
+        int full;
+        int empty;
+        int mutex;
+}sbuf_t;
+
+sbuf_t shared;
+
+//Same as sem_wait() of POSIX semaphore
+
+void sem_acq(int *semid){
+        struct sembuf sb;
+        sb.sem_num = 0;
+        sb.sem_op = -1;
+        sb.sem_flg = 0;
+
+        int x = semop(*semid,&sb,1);
+        if(x==-1){
+                perror("\n Failed to acquire semaphore\n");
+                exit(1);
+        }
+}
+
+//same as same_post() of POSIX semaphore
+
+void sem_rel(int *semid){
+        struct sembuf sb;
+        sb.sem_num = 0;
+        sb.sem_op = 1;
+        sb.sem_flg = 0;
+
+        int x = semop(*semid,&sb,1);
+        if(x==-1){
+                perror("\n Failed to release semaphore\n");
+                exit(1);
+        }
+}
+
+//Producer procedure
+
+void * Producer(void* arg){
+        int i,item,index;
+        index = (intptr_t) arg;
+        for(i=0;i<NITERS;i++){
+                item=i;
+                sem_acq(&shared.empty);
+                sem_acq(&shared.mutex);
+                shared.buf[shared.in]=item;
+                shared.in=(shared.in+1)%BUFF_SIZE;
+                printf("P[%d] Producing %d...\n",index,item);
+                fflush(stdout);
+                sem_rel(&shared.mutex);
+                sem_rel(&shared.full);
+                if(i%2==1)
+                        sleep(1);
+        }
+
+        //if(i%2 ==0)
+        //      sleep(1);
+
+return NULL;
+}
+
+//Consumer procedure
+
+void * Consumer(void* arg){
+        int item,i,index;
+        index = (intptr_t) arg;
+        for(i=0;i<NITERS;i++){
+                sem_acq(&shared.full);
+                sem_acq(&shared.mutex);
+
+                item=shared.buf[shared.out];
+                shared.out=(shared.out+1)%BUFF_SIZE;
+                printf("P[%d] Consuming %d ... \n",index,item);
+                fflush(stdout);
+
+                sem_rel(&shared.mutex);
+                sem_rel(&shared.empty);
+
+                if(i%2==1)
+                        sleep(1);
+
+        }
+
+        //if(i%2 == 0)
+        //      sleep(1);
+
+        return NULL;
+}
+
+int main(){
+        pthread_t idP[NP],idC[NP];
+        int index;
+        key_t k1 = ftok(".",1);
+        key_t k2 = ftok(".",2);
+        key_t k3 = ftok(".",3);
+        //shared.full=semget(k1,1,0666|IPC_CREAT);
+        shared.full=5636215;
+        semctl(shared.full,0,SETVAL,0);
+
+        //shared.empty=semget(k2,1,0666|IPC_CREAT);
+        shared.empty=5668984;
+        semctl(shared.empty,0,SETVAL,BUFF_SIZE);
+
+        //shared.mutex=semget(k3,1,0666|IPC_CREAT);
+        shared.mutex=5701753;
+        semctl(shared.mutex,0,SETVAL,1);
+
+        for(index=0;index<NP;index++){
+                pthread_create(&idP[index],NULL,Producer,(void*)(intptr_t)index);
+                sleep(1);
+                pthread_create(&idC[index],NULL,Consumer,(void*)(intptr_t)index);
+        }
+
+        for(index=0;index<NP;index++){
+                pthread_join(idP[index],NULL);
+                pthread_join(idC[index],NULL);
+        }
+
+pthread_exit(NULL);
+return 0;
+}
+

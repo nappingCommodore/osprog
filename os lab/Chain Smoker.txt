@@ -1,0 +1,56 @@
+//chain smoker
+
+#include<stdio.h>
+#include<pthread.h>
+#include<semaphore.h>
+#include<stdint.h>
+#include<unistd.h>
+
+#define SN 3
+
+sem_t mutex;
+
+void *smoke(void* arg){
+        int i;
+        int ran = rand()%SN;    //Agent put two items on table
+
+        sem_wait(&mutex);
+        switch(ran){
+                case 0:
+                        printf("Agent put paper and matchbox on table.\n\n");
+                        break;
+
+                case 1:
+                        printf("Agent put tobacco and matchbox on table.\n\n");
+                        break;
+
+                case 2:
+                        printf("Agent put tobacco and paper on table.\n\n");
+                        break;
+        }
+
+        printf("Smoker %d is smoking the ciggratte....\n",ran+1);
+        printf("Smoker %d smoked.\n\n\n",ran+1);
+
+        sem_post(&mutex);
+        return NULL;
+}
+
+
+int main(){
+        pthread_t agent_thread[10];
+        int i;
+
+        printf("Smoker 1 has tobacco.\nSmoker 2 has paper.\nSmoker 3 has matchbox.\n\n\n");
+
+        sem_init(&mutex,0,1);
+
+        for(i=0;i<10;i++){
+                pthread_create(&agent_thread[i],NULL,smoke,NULL);
+        }
+
+        for(i=0;i<10;i++){
+                pthread_join(agent_thread[i],NULL);
+        }
+        return 0;
+}

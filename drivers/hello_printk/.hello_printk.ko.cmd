@@ -1,0 +1,1 @@
+cmd_/home/niks/os/drivers/hello_printk/hello_printk.ko := ld -r -m elf_x86_64 -T /usr/src/linux-headers-3.13.0-65-generic/scripts/module-common.lds --build-id  -o /home/niks/os/drivers/hello_printk/hello_printk.ko /home/niks/os/drivers/hello_printk/hello_printk.o /home/niks/os/drivers/hello_printk/hello_printk.mod.o

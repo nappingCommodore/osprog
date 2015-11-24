@@ -1,0 +1,50 @@
+//thread library using clone method
+
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <sched.h>
+#include <malloc.h>
+#include <stdlib.h>
+
+#define FIBER_STACK 1024*64
+
+int threadFunction(void* arg){
+        printf("Child thread exiting\n\n\n");
+        return 0;
+}
+
+int main(){
+        void *stack;
+        pid_t pid;
+        stack = malloc(FIBER_STACK);
+
+        if(stack == 0){
+                perror("malloc: could not allocate stack\n");
+                exit(1);
+        }
+
+        printf("Creating child thread...\n\n");
+
+        pid = clone(&threadFunction,(char*) stack+FIBER_STACK,SIGCHLD,0);
+
+        if(pid == -1){
+                perror("Cloning error\n");
+                exit(2);
+        }
+
+        pid = waitpid(pid,0,0);
+
+        if(pid == -1){
+                perror("Wait pid error\n");
+                exit(3);
+        }
+
+        free(stack);
+
+        printf("Child thread returned and stack freed\n\n");
+
+        return 0;
+}

@@ -1,0 +1,22 @@
+#include<stdio.h>
+#include<dirent.h>
+#include<ctype.h>
+#include<string.h>
+int main(){
+DIR *dp=opendir("/proc");
+ struct dirent *dir;
+while((dir=readdir(dp))!=NULL)
+ {
+if(isdigit(dir->d_name[0]))
+  {
+    char buf[256];
+   sprintf(buf,"/proc/%s/stat",
+ dir->d_name);
+   FILE *fp;
+  int a; char b[50],c[2];
+   fp=fopen(buf,"r");
+  fscanf(fp,"%d%s%s",&a,b,c);
+  printf("%d   %s   %s\n",a,b,c);
+}
+}
+}

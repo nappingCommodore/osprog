@@ -1,0 +1,28 @@
+
+#include<stdlib.h>
+#include<stdio.h>
+#include<dirent.h>
+int main(int argc,char *argv[])
+{
+int chc=0;
+int wrdc=0;
+int linec=0;
+char ch;
+FILE *fp;
+if(argc==2)
+
+fp=fopen(argv[1],"r");
+while((ch=getc(fp))!=EOF)
+{
+chc++;
+if(ch==' ')
+wrdc++;
+if(ch=='\n')
+linec++;
+}
+if(fp==NULL)
+{ printf("%s","file is empty");}
+else
+{
+printf("%d %d %d",chc,wrdc,linec);}
+}

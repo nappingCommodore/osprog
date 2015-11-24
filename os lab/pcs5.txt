@@ -1,0 +1,106 @@
+#include<pthread.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<sys/sem.h>
+#include<sys/ipc.h>
+#define BUFF_SIZE 5
+#define NP 3
+#define NC 3
+#define NITERS 4
+
+typedef struct{
+int buf[BUFF_SIZE];
+int in;
+int out;
+int full;
+int empty;
+int mutex;
+} sbuf_t;
+
+sbuf_t shared;
+
+void sem_acq(int semid){
+struct sembuf sb;
+sb.sem_num=0;
+sb.sem_op=-1;
+sb.sem_flg=0;
+if((semop(semid,&sb,1))==-1){
+perror("\n Failed to acquire semaphore");
+exit(0);
+}}
+
+void sem_rel(int semid){
+struct sembuf sb;
+sb.sem_num=0;
+sb.sem_op=1;
+sb.sem_flg=0;
+if((semop(semid,&sb,1))==-1){
+perror("\n Failed to release semaphore");
+exit(0);
+}}
+
+
+
+void *producer(void *arg){
+int i,item,index;
+//index= *((int *)arg);
+index=(int)arg;
+for(i=0;i<NITERS;i++){
+item=i;
+sem_acq(shared.empty);
+sem_acq(shared.mutex);
+shared.buf[shared.in]=item;
+shared.in=(shared.in+1)% BUFF_SIZE;
+printf(" P %d Producing %d....\n",index,item);
+fflush(stdout);
+sem_rel(shared.mutex);
+sem_rel(shared.full);
+if(i%2==1) sleep(1);
+}
+return NULL;
+}
+
+void *consumer(void *arg){
+int i,item,index;
+//index=*((int *)arg);
+index=(int)arg;
+for(i=0;i<NITERS;i++)
+{
+sem_acq(shared.full);
+sem_acq(shared.mutex);
+item=shared.buf[shared.out];
+shared.out=(shared.out+1)%BUFF_SIZE;
+printf(" P %d Consuming %d....\n",index,item);
+fflush(stdout);
+sem_rel(shared.mutex);
+sem_rel(shared.empty);
+if(i%2==1) sleep(1);
+}
+return NULL;
+}
+
+int main(){
+pthread_t idP,idC;
+int index;
+key_t k1=ftok(".",1);
+key_t k2=ftok(".",2);
+key_t k3=ftok(".",3);
+shared.full=semget(k1,1,0666|IPC_CREAT);
+semctl(shared.full,0,SETVAL,0);
+shared.empty=semget(k2,1,0666|IPC_CREAT);
+semctl(shared.empty,0,BUFF_SIZE);
+shared.mutex=semget(k3,1,0666|IPC_CREAT);
+semctl(shared.mutex,0,1);
+
+for(index=0;index<NP;index++)
+{
+pthread_create(&idP,NULL,producer,(void *)index);
+}
+for(index=0;index<NC;index++)
+{
+pthread_create(&idC,NULL,consumer,(void *)index);
+}
+pthread_exit(NULL);
+return 0;
+}
+

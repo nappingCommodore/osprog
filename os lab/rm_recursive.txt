@@ -1,0 +1,58 @@
+#include<stdio.h>
+#include<sys/stat.h>
+#include<string.h>
+#include<stdlib.h>
+#include<dirent.h>
+#include<unistd.h>
+int removedir(char path[100])
+{
+DIR *pdir=NULL;
+struct dirent *pint=NULL;
+struct stat estat;
+pdir=opendir(path);
+char ch[100];
+if(pdir==NULL)
+{
+return -1;
+while((pint=readdir(pdir))!=NULL)
+{
+if(strcmp(pint->d_name,".")==0|| strcmp(pint->d_name,"..")==0)
+continue;
+else
+{
+strcpy(ch,path);
+path=strcat(path,pint->d_name);
+printf("%s \n",path);
+stat(path,&estat);
+if(S_DSDIR(estat.st_mode))
+{
+printf("DIR %s \n",path);
+removedir(path);
+strcpy(path,ch);
+}
+else
+{
+printf("file %s \n",path);
+removedir(path);
+strcpy(path,ch);
+}}}
+printf("%s \n",path);
+if(!rmdir(path))
+return -1;
+return 0;
+}
+
+int main(int argc,char *argv[])
+{
+char path[100];
+if(argc<1)
+{
+printf("Enter directory name");
+exit(0);
+}
+strcpy(path,argv[1]);
+int ret=removedir(path);
+printf("%d \n",ret);
+return 1;
+}
+

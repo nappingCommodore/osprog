@@ -1,0 +1,91 @@
+//producer consumer problem
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<semaphore.h>
+#include<pthread.h>
+
+
+#define BUFF_SIZE       5       //size of the buffer
+#define NP              3       //number of producers
+#define NC              3       //number of cunsumers
+#define NITERS          4       //numbers of iterations
+
+
+typedef struct{
+        int     buf[BUFF_SIZE];
+        int     in;
+        int     out;
+        sem_t   full;
+        sem_t   empty;
+        sem_t   mutex;
+}sbuf_t;
+
+sbuf_t shared;
+
+
+void *Producer(void* arg){
+        int i, item, index;
+        index = (int) arg;
+
+        for(i=0; i<NITERS; i++){
+                item = i;
+
+                sem_wait(&shared.empty);
+                sem_wait(&shared.mutex);
+
+                shared.buf[shared.in] = item;
+                shared.in = (shared.in+1)%BUFF_SIZE;
+                printf("P%d producing %d ...\n",index,item);
+                fflush(stdout);
+
+                sem_post(&shared.mutex);
+                sem_post(&shared.full);
+
+                if(i%2 == 1)
+                        sleep(1);
+        }
+        return NULL;
+}
+void *Consumer(void* arg){
+        int i, item, index;
+        index = (int) arg;
+
+        for(i=0; i<NITERS; i++){
+                sem_wait(&shared.full);
+                sem_wait(&shared.mutex);
+
+                shared.buf[shared.in] = item;
+                shared.in = (shared.in+1)%BUFF_SIZE;
+                printf("C%d Consuming%d ...\n",index,item);
+                fflush(stdout);
+
+                sem_post(&shared.mutex);
+                sem_post(&shared.empty);
+
+                if(i%2 == 0)
+                        sleep(1);
+        }
+        return NULL;
+}
+
+
+int main(){
+        pthread_t idP,idC;
+        int index;
+
+        sem_init(&shared.full,0,0);
+        sem_init(&shared.empty,0,BUFF_SIZE);
+        sem_init(&shared.mutex,0,1);
+
+        for(index = 0; index<NP ; index++){
+                pthread_create(&idP,NULL,Producer,(void*) index);
+        }
+
+        for(index = 0; index<NC; index++){
+                pthread_create(&idC,NULL,Consumer, (void*)index);
+        }
+
+        pthread_exit(NULL);
+        return 0;
+}

@@ -1,0 +1,16 @@
+#include<stdio.h>
+#include<sys/stat.h>
+#include<dirent.h>
+#include<stdlib.h>
+#include<fcntl.h>
+# define BUFSIZE 1
+int main(int argc ,char**argv)
+{   int fd1;
+    int n;
+  char buf;
+    fd1=open(argv[1],O_RDONLY);
+   while((n=read(fd1,&buf,1))>0)
+{
+  printf("%c",buf);
+}
+return 0;}
